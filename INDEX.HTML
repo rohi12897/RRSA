@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>RSA Learning World - Upload</title>
+  <style>
+    /* Simple, attractive styling */
+    :root{
+      --bg:#0f1724; /* dark navy */
+      --card:#0b1220;
+      --accent:#4f46e5; /* indigo */
+      --accent-2:#06b6d4; /* teal */
+      --muted:#9aa4b2;
+      --glass: rgba(255,255,255,0.04);
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+    html,body{height:100%;margin:0;background:linear-gradient(180deg,var(--bg),#071026);color:#e6eef8}
+    .container{max-width:1100px;margin:36px auto;padding:28px}
+    header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+    h1{font-size:22px;letter-spacing:0.4px;margin:0}
+    .brand{display:flex;gap:12px;align-items:center}
+    .logo{width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent-2));display:flex;align-items:center;justify-content:center;font-weight:700;color:white;box-shadow:0 8px 30px rgba(15,20,36,0.6)}
+    .subtitle{color:var(--muted);font-size:13px}
+
+    .card{background:var(--card);border-radius:14px;padding:18px;box-shadow:0 6px 24px rgba(2,6,23,0.6);border:1px solid rgba(255,255,255,0.03)}
+
+    .upload-area{border:2px dashed rgba(255,255,255,0.06);padding:28px;border-radius:12px;text-align:center;cursor:pointer;background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent);}
+    .upload-area.dragover{border-color:rgba(79,70,229,0.9);box-shadow:0 6px 30px rgba(79,70,229,0.08)}
+    .upload-area p{margin:8px 0;color:var(--muted)}
+    .btn{display:inline-block;padding:10px 14px;border-radius:10px;background:linear-gradient(90deg,var(--accent),var(--accent-2));color:white;text-decoration:none;font-weight:600}
+
+    .flex{display:flex;gap:18px}
+    .col{flex:1}
+    .right{width:320px}
+
+    .sections{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-top:18px}
+    .section-title{display:flex;align-items:center;justify-content:space-between}
+    .file-item{display:flex;align-items:center;gap:12px;padding:10px;border-radius:10px;background:var(--glass);border:1px solid rgba(255,255,255,0.02)}
+    .file-thumb{width:48px;height:48px;border-radius:8px;background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--muted);overflow:hidden}
+    .meta{font-size:13px}
+    .meta small{display:block;color:var(--muted);font-size:12px}
+
+    footer{margin-top:30px;text-align:center;color:var(--muted);font-size:13px}
+
+    /* Responsive */
+    @media (max-width:840px){.flex{flex-direction:column}.right{width:100%}}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <div class="logo">RSA</div>
+        <div>
+          <h1>RSA Learning World</h1>
+          <div class="subtitle">Upload notes, videos and learning materials — quick & simple</div>
+        </div>
+      </div>
+      <nav>
+        <a class="btn" href="#uploads" id="viewUploads">View Uploads</a>
+      </nav>
+    </header>
+
+    <main class="card">
+      <div class="flex">
+        <div class="col">
+          <div id="dropArea" class="upload-area" tabindex="0">
+            <h2 style="margin:0">Drop files here or click to choose</h2>
+            <p>PDFs, Docs, Images, ZIPs, Videos — you can select more than one file at a time.</p>
+            <input id="fileInput" type="file" multiple style="display:none" />
+            <div style="margin-top:10px"><button id="chooseBtn" class="btn" type="button">Choose files</button></div>
+          </div>
+
+          <div style="margin-top:18px">
+            <label style="font-weight:600">Upload log</label>
+            <div id="log" style="margin-top:8px;color:var(--muted);font-size:13px;min-height:48px">No uploads yet.</div>
+          </div>
+        </div>
+
+        <aside class="right">
+          <div style="margin-bottom:12px">
+            <label style="font-weight:700">Quick actions</label>
+            <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn" id="clearBtn" style="background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted)">Clear list</button>
+              <button class="btn" id="saveLocal" style="background:linear-gradient(90deg,#0ea5b3,#60a5fa)">Save to browser</button>
+            </div>
+          </div>
+
+          <div class="card" style="padding:12px">
+            <div style="font-weight:700;margin-bottom:8px">Upload summary</div>
+            <div style="font-size:13px;color:var(--muted)" id="summary">0 files — 0 KB</div>
+          </div>
+        </aside>
+      </div>
+
+      <section id="uploads" style="margin-top:18px">
+        <div class="section-title"><h3 style="margin:0">Uploaded files</h3><div style="color:var(--muted);font-size:13px">Organized by type</div></div>
+
+        <div class="sections" id="sectionsContainer">
+          <!-- Sections will be injected here: Notes, Videos, Images, Other -->
+        </div>
+      </section>
+
+    </main>
+
+    <footer>
+      RSA Learning World • Simple demo upload page • Files are stored only in your browser (no server) in this demo.
+    </footer>
+  </div>
+
+  <script>
+    // Basic JS to handle multiple file uploads, preview and localStorage persistence (demo only)
+    const fileInput = document.getElementById('fileInput');
+    const dropArea = document.getElementById('dropArea');
+    const chooseBtn = document.getElementById('chooseBtn');
+    const log = document.getElementById('log');
+    const sectionsContainer = document.getElementById('sectionsContainer');
+    const summary = document.getElementById('summary');
+    const clearBtn = document.getElementById('clearBtn');
+    const saveLocal = document.getElementById('saveLocal');
+
+    let filesList = []; // array of {id,name,size,type,dataUrl?,uploadedAt}
+
+    // Helpers
+    function humanSize(n){ if(n<1024) return n+' B'; if(n<1024*1024) return (n/1024).toFixed(1)+' KB'; return (n/1024/1024).toFixed(2)+' MB'; }
+    function uid(){ return Math.random().toString(36).slice(2,9); }
+
+    function updateSummary(){
+      const total = filesList.reduce((s,f)=>s+f.size,0);
+      summary.textContent = filesList.length + ' files — ' + humanSize(total);
+    }
+
+    function categorize(mime){
+      if(!mime) return 'other';
+      if(mime.startsWith('image/')) return 'Images';
+      if(mime.startsWith('video/')) return 'Videos';
+      if(mime === 'application/pdf' || mime.includes('word') || mime.includes('officedocument') || mime.includes('text')) return 'Notes';
+      return 'Other';
+    }
+
+    function renderSections(){
+      const buckets = { Notes:[], Videos:[], Images:[], Other:[] };
+      filesList.forEach(f=>{ const cat = categorize(f.type); buckets[cat].push(f); });
+      sectionsContainer.innerHTML = '';
+      for(const [title,items] of Object.entries(buckets)){
+        const wrap = document.createElement('div');
+        wrap.className = 'card';
+        wrap.style.padding='12px';
+        const heading = document.createElement('div');
+        heading.style.fontWeight='700';
+        heading.style.marginBottom='8px';
+        heading.textContent = title + ' ('+items.length+')';
+        wrap.appendChild(heading);
+
+        if(items.length===0){
+          const p = document.createElement('div'); p.style.color='var(--muted)'; p.style.fontSize='13px'; p.textContent='No files in this section.'; wrap.appendChild(p);
+        } else {
+          items.forEach(it=>{
+            const el = document.createElement('div'); el.className='file-item'; el.style.marginBottom='8px';
+            const thumb = document.createElement('div'); thumb.className='file-thumb';
+
+            if(it.type && it.type.startsWith('image/') && it.dataUrl){
+              const img = document.createElement('img'); img.src = it.dataUrl; img.style.width='100%'; img.style.height='100%'; img.style.objectFit='cover';
+              thumb.appendChild(img);
+            } else {
+              thumb.textContent = it.name.split('.').pop().toUpperCase();
+            }
+
+            const meta = document.createElement('div'); meta.className='meta';
+            const name = document.createElement('div'); name.textContent = it.name; name.style.fontWeight='600';
+            const small = document.createElement('small'); small.textContent = humanSize(it.size) + ' • ' + new Date(it.uploadedAt).toLocaleString();
+            meta.appendChild(name); meta.appendChild(small);
+
+            const actions = document.createElement('div'); actions.style.marginLeft='auto'; actions.style.display='flex'; actions.style.alignItems='center'; actions.style.gap='8px';
+            const dl = document.createElement('a'); dl.href = it.dataUrl || '#'; dl.download = it.name; dl.textContent='Download'; dl.style.fontSize='13px'; dl.style.color='var(--muted)';
+            const rem = document.createElement('button'); rem.textContent='Remove'; rem.style.border='none'; rem.style.background='transparent'; rem.style.color='var(--muted)'; rem.style.cursor='pointer';
+            rem.onclick = ()=>{ filesList = filesList.filter(f=>f.id!==it.id); saveToLocalStorage(false); renderSections(); updateSummary(); updateLog(); };
+
+            actions.appendChild(dl); actions.appendChild(rem);
+
+            el.appendChild(thumb); el.appendChild(meta); el.appendChild(actions);
+            wrap.appendChild(el);
+          });
+        }
+
+        sectionsContainer.appendChild(wrap);
+      }
+    }
+
+    function updateLog(){
+      if(filesList.length===0) log.textContent='No uploads yet.';
+      else log.innerHTML = filesList.slice().reverse().map(f=>`<div style="margin-bottom:6px">• <strong>${f.name}</strong> — ${humanSize(f.size)} <span style="color:var(--muted)">(${new Date(f.uploadedAt).toLocaleString()})</span></div>`).join('');
+    }
+
+    // Handling files: read small previews (images) and store dataURL for download demo
+    function handleFiles(files){
+      const arr = Array.from(files);
+      let pending = arr.length;
+      updateLog();
+
+      arr.forEach(file=>{
+        const reader = new FileReader();
+        const record = { id: uid(), name: file.name, size: file.size, type: file.type, uploadedAt: Date.now(), dataUrl: null };
+        reader.onload = (e)=>{
+          // Only store dataUrl for small files to avoid huge memory usage (demo)
+          if(file.size < 5*1024*1024) record.dataUrl = e.target.result;
+          filesList.push(record);
+          pending--; if(pending===0){ renderSections(); updateSummary(); updateLog(); }
+        };
+        reader.onerror = ()=>{ pending--; if(pending===0){ renderSections(); updateSummary(); updateLog(); } };
+        if(file.type.startsWith('image/') || file.size < 5*1024*1024) reader.readAsDataURL(file); else { filesList.push(record); pending--; if(pending===0){ renderSections(); updateSummary(); updateLog(); } }
+      });
+    }
+
+    // Events
+    chooseBtn.addEventListener('click', ()=> fileInput.click());
+    fileInput.addEventListener('change',(e)=>{ if(e.target.files.length) handleFiles(e.target.files); fileInput.value=''; });
+
+    ['dragenter','dragover'].forEach(ev=>{ dropArea.addEventListener(ev,(e)=>{ e.preventDefault(); e.stopPropagation(); dropArea.classList.add('dragover'); }); });
+    ['dragleave','drop'].forEach(ev=>{ dropArea.addEventListener(ev,(e)=>{ e.preventDefault(); e.stopPropagation(); dropArea.classList.remove('dragover'); }); });
+    dropArea.addEventListener('drop',(e)=>{ const dt = e.dataTransfer; if(dt && dt.files && dt.files.length) handleFiles(dt.files); });
+    dropArea.addEventListener('click', ()=> fileInput.click());
+
+    clearBtn.addEventListener('click', ()=>{ if(confirm('Clear all uploaded items from this page?')){ filesList=[]; saveToLocalStorage(false); renderSections(); updateSummary(); updateLog(); } });
+
+    // localStorage persistence (simple demo)
+    function saveToLocalStorage(showAlert=true){
+      try{
+        const toSave = filesList.map(f=>({id:f.id,name:f.name,size:f.size,type:f.type,uploadedAt:f.uploadedAt,dataUrl:f.dataUrl}));
+        localStorage.setItem('rsa_uploads_v1', JSON.stringify(toSave));
+        if(showAlert) alert('Saved upload metadata to your browser. (Files themselves are stored in-memory as Data URLs where small.)');
+      }catch(e){ alert('Saving failed: ' + e.message); }
+    }
+    saveLocal.addEventListener('click', ()=> saveToLocalStorage(true));
+
+    function loadFromLocalStorage(){
+      try{
+        const raw = localStorage.getItem('rsa_uploads_v1');
+        if(!raw) return;
+        const parsed = JSON.parse(raw);
+        if(Array.isArray(parsed)){
+          filesList = parsed;
+          renderSections(); updateSummary(); updateLog();
+        }
+      }catch(e){ console.warn('Load failed', e); }
+    }
+
+    function autoSaveBeforeUnload(){
+      // keep a lightweight version if user reloads
+      try{ localStorage.setItem('rsa_uploads_v1_light', JSON.stringify(filesList.map(f=>({id:f.id,name:f.name,size:f.size,type:f.type,uploadedAt:f.uploadedAt})))) }catch(e){}
+    }
+    window.addEventListener('beforeunload', autoSaveBeforeUnload);
+
+    // Init
+    loadFromLocalStorage();
+
+    // Helper to keep localStorage in sync when removing
+    function saveToLocalStorageOnChange(){ try{ localStorage.setItem('rsa_uploads_v1', JSON.stringify(filesList)); }catch(e){} }
+    // small interval to sync
+    setInterval(saveToLocalStorageOnChange, 5000);
+
+    // Utility: jump to uploads
+    document.getElementById('viewUploads').addEventListener('click', (e)=>{ e.preventDefault(); document.getElementById('uploads').scrollIntoView({behavior:'smooth'}); });
+  </script>
+</body>
+</html>
